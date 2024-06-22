@@ -30,6 +30,10 @@ class TransformerNode(Node):
 
     def subscription_callback(self, msg):
         self.get_logger().info(f"subscription: pose={msg}")
+        msg = JointState()
+        msg.name = ["demo"]
+        msg.position = [0.0]
+        self.publisher_.publish(msg)
 
 
 def main(args=None):
