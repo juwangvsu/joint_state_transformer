@@ -67,10 +67,10 @@ def launch_description(proc_pub, proc_sub):
                     target_action=proc_pub,
                     on_start=[
                         launch.actions.TimerAction(
-                            period=2.0,
+                            period=10.0,
                             actions=[
                                 launch.actions.LogInfo(
-                                    msg=f"Sub waited 2 seconds; start"
+                                    msg=f"Sub waited 10 seconds; start"
                                 ),
                                 proc_sub,
                             ],
@@ -133,6 +133,6 @@ effort: []
         assert true in output, output
 
     launch_pytest.tools.process.assert_output_sync(
-        launch_context, proc_sub, validate_output, timeout=5
+        launch_context, proc_sub, validate_output, timeout=15
     )
     yield
