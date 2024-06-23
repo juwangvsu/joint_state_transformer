@@ -41,7 +41,11 @@ def generate_launch_description():
                 executable="transformer",
                 package="joint_state_transformer",
                 output="screen",
-                parameters=[{}],
+                parameters=[
+                    {
+                        "checkpoint": "hf:yong-tang/cspace",
+                    }
+                ],
                 remappings=[
                     ("~/robot_description", "/robot_description"),
                 ],

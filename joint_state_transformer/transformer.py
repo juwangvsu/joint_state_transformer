@@ -5,6 +5,8 @@ from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
 
+import cspace.transformers
+
 
 class TransformerNode(Node):
     def __init__(self):
@@ -13,6 +15,7 @@ class TransformerNode(Node):
         self.declare_parameter("pose", "~/pose")
         self.declare_parameter("joint_states", "~/joint_states")
         self.declare_parameter("robot_description", "~/robot_description")
+        self.declare_parameter("checkpoint", rclpy.Parameter.Type.STRING)
 
         self.pose_ = self.get_parameter("pose").get_parameter_value().string_value
         self.joint_states_ = (
@@ -21,13 +24,19 @@ class TransformerNode(Node):
         self.robot_description_ = (
             self.get_parameter("robot_description").get_parameter_value().string_value
         )
+        self.checkpoint_ = (
+            self.get_parameter("checkpoint").get_parameter_value().string_value
+        )
         self.get_logger().info(
-            "parameters: pose={} joint_states={} robot_description={}".format(
+            "parameters: pose={} joint_states={} robot_description={} checkpoint={}".format(
                 self.pose_,
                 self.joint_states_,
                 self.robot_description_,
+                self.checkpoint_,
             )
         )
+
+        self.kinematics_ = None
 
         self.publisher_ = self.create_publisher(JointState, self.joint_states_, 10)
         self.subscription_ = self.create_subscription(
@@ -51,6 +60,14 @@ class TransformerNode(Node):
 
     def description_callback(self, msg):
         self.get_logger().info(f"description: data={msg}")
+        if self.kinematics_:
+            self.get_logger().info(f"description: kinematics load")
+            kinematics = cspace.transformers.Kinematics(
+                msg.data, "panda_hand", mode="gpt2"
+            )
+            self.kinematics_ = kinematics
+            self.get_logger().info(f"description: kinematics done")
+        self.get_logger().info(f"description: kinematics={self.kinematics_}")
 
 
 def main(args=None):
