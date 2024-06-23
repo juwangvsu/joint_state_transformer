@@ -1,6 +1,5 @@
 import pytest
 import launch
-import launch_ros
 import launch_pytest
 import moveit_configs_utils
 
@@ -78,25 +77,14 @@ def launch_description(proc_pub, proc_sub):
                     ],
                 )
             ),
-            ros2_control_hardware_type,
-            launch_ros.actions.Node(
-                package="robot_state_publisher",
-                executable="robot_state_publisher",
-                output="screen",
-                parameters=[moveit_config.robot_description],
-            ),
-            launch_ros.actions.Node(
-                executable="transformer",
-                package="joint_state_transformer",
-                output="screen",
-                parameters=[
-                    {
-                        "checkpoint": "hf:yong-tang/cspace",
-                    }
+            launch.actions.ExecuteProcess(
+                cmd=[
+                    "ros2",
+                    "launch",
+                    "joint_state_transformer",
+                    "launch.demo.py",
                 ],
-                remappings=[
-                    ("~/robot_description", "/robot_description"),
-                ],
+                cached_output=True,
             ),
         ]
     )
