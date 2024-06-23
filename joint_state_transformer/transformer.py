@@ -8,6 +8,7 @@ from geometry_msgs.msg import PoseStamped
 import cspace.transformers
 import huggingface_hub
 import accelerate
+import torch
 
 
 class TransformerNode(Node):
@@ -60,25 +61,52 @@ class TransformerNode(Node):
         )
 
     def subscription_callback(self, msg):
-        self.get_logger().info(f"subscription: pose={msg}")
-        msg = JointState()
-        msg.name = ["demo"]
-        msg.position = [0.0]
-        self.publisher_.publish(msg)
+        self.get_logger().info(f"subscription: {msg}")
+        if self.kinematics_:
+            assert self.kinematics_.link == tuple([msg.header.frame_id])
+            position = torch.tensor(
+                (msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+            ).unsqueeze(-1)
+            orientation = torch.tensor(
+                (
+                    msg.pose.orientation.x,
+                    msg.pose.orientation.y,
+                    msg.pose.orientation.z,
+                    msg.pose.orientation.w,
+                )
+            ).unsqueeze(-1)
+            pose = cspace.torch.classes.LinkPoseCollection(
+                base=self.kinematics_.base,
+                name=self.kinematics_.link,
+                position=position,
+                orientation=orientation,
+            )
+            state = self.kinematics_.inverse(pose)
+
+            msg = JointState()
+            msg.header.frame_id = self.kinematics_.base
+            msg.name = list(state.name)
+            msg.position = list(
+                state.position(self.kinematics_.spec, name).item()
+                for name in state.name
+            )
+
+            self.publisher_.publish(msg)
+            self.get_logger().info(f"joint_state: {msg}")
 
     def description_callback(self, msg):
-        self.get_logger().info(f"description: data={msg}")
-        if self.kinematics_:
+        self.get_logger().info(f"description: {msg}")
+        if not self.kinematics_:
             self.get_logger().info(f"description: kinematics load")
             kinematics = cspace.transformers.Kinematics(
-                msg.data, "panda_hand", mode="gpt2"
+                msg.data, "panda_hand", model="gpt2"
             )
             kinematics.model = accelerate.load_checkpoint_and_dispatch(
                 kinematics.model, checkpoint=self.local_
             )
             self.kinematics_ = kinematics
             self.get_logger().info(f"description: kinematics done")
-        self.get_logger().info(f"description: kinematics={self.kinematics_}")
+        self.get_logger().info(f"description: {self.kinematics_}")
 
 
 def main(args=None):
