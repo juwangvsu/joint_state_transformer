@@ -14,7 +14,7 @@ def proc_pub():
             "pub",
             "/joint_state_transformer/pose",
             "geometry_msgs/msg/PoseStamped",
-            "{pose: {position: {x: 0.2, y: 0.1, z: 0.3}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}",
+            "{header: {frame_id: panda_hand, stamp: now}, pose: {position: {x: 0.2, y: 0.1, z: 0.3}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}",
         ],
         cached_output=True,
     )
@@ -62,7 +62,22 @@ def launch_description(proc_pub, proc_sub):
     return launch.LaunchDescription(
         [
             proc_pub,
-            proc_sub,
+            launch.actions.RegisterEventHandler(
+                event_handler=launch.event_handlers.OnProcessStart(
+                    target_action=proc_pub,
+                    on_start=[
+                        launch.actions.TimerAction(
+                            period=2.0,
+                            actions=[
+                                launch.actions.LogInfo(
+                                    msg=f"Sub waited 2 seconds; start"
+                                ),
+                                proc_sub,
+                            ],
+                        ),
+                    ],
+                )
+            ),
             ros2_control_hardware_type,
             launch_ros.actions.Node(
                 package="robot_state_publisher",
@@ -74,7 +89,11 @@ def launch_description(proc_pub, proc_sub):
                 executable="transformer",
                 package="joint_state_transformer",
                 output="screen",
-                parameters=[{}],
+                parameters=[
+                    {
+                        "checkpoint": "hf:yong-tang/cspace",
+                    }
+                ],
                 remappings=[
                     ("~/robot_description", "/robot_description"),
                 ],
@@ -91,11 +110,23 @@ header:
   stamp:
     sec: 0
     nanosec: 0
-  frame_id: ''
+  frame_id: panda_link0
 name:
-- demo
+- panda_joint1
+- panda_joint2
+- panda_joint3
+- panda_joint4
+- panda_joint5
+- panda_joint6
+- panda_joint7
 position:
-- 0.0
+- -1.7939223223223226
+- -0.43659539539539494
+- 0.2376056056056055
+- 0.08568389902945395
+- 2.1622110110110113
+- 3.8203431907911556
+- 0.33264784784784807
 velocity: []
 effort: []
 """

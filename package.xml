@@ -7,9 +7,12 @@
   <maintainer email="yong.tang.github@outlook.com">Yong Tang</maintainer>
   <license>Apache-2.0</license>
 
+  <depend>python3-pip</depend>
+
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
+  <test_depend>launch_pytest</test_depend>
   <test_depend>python3-pytest</test_depend>
   <test_depend>moveit_configs_utils</test_depend>
   <test_depend>moveit_resources_panda_moveit_config</test_depend>
