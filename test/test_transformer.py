@@ -1,7 +1,6 @@
 import pytest
 import launch
 import launch_pytest
-import moveit_configs_utils
 
 
 @pytest.fixture
@@ -34,30 +33,6 @@ def proc_sub():
 
 @launch_pytest.fixture
 def launch_description(proc_pub, proc_sub):
-    ros2_control_hardware_type = launch.actions.DeclareLaunchArgument(
-        "ros2_control_hardware_type",
-        default_value="mock_components",
-        description="ROS2 control hardware interface type to use for the launch file -- possible values: [mock_components, isaac]",
-    )
-
-    moveit_config = (
-        moveit_configs_utils.MoveItConfigsBuilder("moveit_resources_panda")
-        .robot_description(
-            file_path="config/panda.urdf.xacro",
-            mappings={
-                "ros2_control_hardware_type": launch.substitutions.LaunchConfiguration(
-                    "ros2_control_hardware_type"
-                )
-            },
-        )
-        .robot_description_semantic(file_path="config/panda.srdf")
-        .trajectory_execution(file_path="config/gripper_moveit_controllers.yaml")
-        .planning_pipelines(
-            pipelines=["ompl", "chomp", "pilz_industrial_motion_planner"]
-        )
-        .to_moveit_configs()
-    )
-
     return launch.LaunchDescription(
         [
             proc_pub,
