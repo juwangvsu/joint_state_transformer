@@ -26,6 +26,7 @@ setup(
     entry_points={
         "console_scripts": [
             "transformer = joint_state_transformer.transformer:main",
+            "receiver = joint_state_transformer.receiver:main",
         ],
     },
 )
