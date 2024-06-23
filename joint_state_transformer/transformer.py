@@ -6,6 +6,8 @@ from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
 
 import cspace.transformers
+import huggingface_hub
+import accelerate
 
 
 class TransformerNode(Node):
@@ -27,12 +29,18 @@ class TransformerNode(Node):
         self.checkpoint_ = (
             self.get_parameter("checkpoint").get_parameter_value().string_value
         )
+        self.local_ = (
+            huggingface_hub.snapshot_download(self.checkpoint_.removeprefix("hf:"))
+            if self.checkpoint_.startswith("hf:")
+            else None
+        )
         self.get_logger().info(
-            "parameters: pose={} joint_states={} robot_description={} checkpoint={}".format(
+            "parameters: pose={} joint_states={} robot_description={} checkpoint={}(local={})".format(
                 self.pose_,
                 self.joint_states_,
                 self.robot_description_,
                 self.checkpoint_,
+                self.local_,
             )
         )
 
@@ -64,6 +72,9 @@ class TransformerNode(Node):
             self.get_logger().info(f"description: kinematics load")
             kinematics = cspace.transformers.Kinematics(
                 msg.data, "panda_hand", mode="gpt2"
+            )
+            kinematics.model = accelerate.load_checkpoint_and_dispatch(
+                kinematics.model, checkpoint=self.local_
             )
             self.kinematics_ = kinematics
             self.get_logger().info(f"description: kinematics done")
