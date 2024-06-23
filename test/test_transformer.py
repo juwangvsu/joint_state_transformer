@@ -14,7 +14,7 @@ def proc_pub():
             "geometry_msgs/msg/PoseStamped",
             "{header: {frame_id: panda_hand, stamp: now}, pose: {position: {x: 0.2, y: 0.1, z: 0.3}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}",
         ],
-        cached_output=True,
+        output="screen",
     )
 
 
@@ -28,6 +28,7 @@ def proc_sub():
             "/joint_state_transformer/joint_states",
         ],
         cached_output=True,
+        output="screen",
     )
 
 
@@ -59,7 +60,7 @@ def launch_description(proc_pub, proc_sub):
                     "joint_state_transformer",
                     "launch.demo.py",
                 ],
-                cached_output=True,
+                output="screen",
             ),
         ]
     )
