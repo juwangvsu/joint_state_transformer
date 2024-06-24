@@ -12,7 +12,8 @@ class Plugin(contextlib.AbstractContextManager):
 
 
 class Rokoko(Plugin):
-    def __init__(self, callback, addr, port):
+    def __init__(self, now, callback, addr, port):
+        self._now_ = now
         self._callback_ = callback
         self._addr_ = str(addr)
         self._port_ = int(port)
@@ -41,6 +42,7 @@ class Rokoko(Plugin):
             data = json.loads(message)
             assert data["version"] == "3,0"
             assert len(data["scene"]["actors"]) == 1
+            now = self._now_()
             for name, item in data["scene"]["actors"][0]["body"].items():
                 position = (
                     item["position"]["x"],
@@ -53,4 +55,4 @@ class Rokoko(Plugin):
                     item["rotation"]["z"],
                     item["rotation"]["w"],
                 )
-                self._callback_(name, position, orientation)
+                self._callback_(name, position, orientation, now)

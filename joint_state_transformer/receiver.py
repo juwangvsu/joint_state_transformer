@@ -51,18 +51,21 @@ class ReceiverNode(Node):
 
         def f_plugin():
             return getattr(importlib.import_module(plugin_module), plugin_class)(
-                callback=self.receive_callback, **params
+                now=self.get_clock().now, callback=self.receive_callback, **params
             )
 
         self.f_plugin = f_plugin
 
-    def receive_callback(self, name, position, orientation):
+    def receive_callback(self, name, position, orientation, now):
         self.get_logger().info(
-            "name={} position={}, orientation={}".format(name, position, orientation)
+            "name={} position={}, orientation={} now={}".format(
+                name, position, orientation, now
+            )
         )
         publisher = self.publisher_.get(name, None)
         if publisher:
             msg = PoseStamped()
+            msg.header.stamp = now.to_msg()
             msg.header.frame_id = name
             msg.pose.position.x, msg.pose.position.y, msg.pose.position.z = position
             (

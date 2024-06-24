@@ -96,10 +96,6 @@ def test_read_stdout(proc_sub, launch_context):
     def validate_output(output):
         true = [
             """
-header:
-  stamp:
-    sec: 0
-    nanosec: 0
   frame_id: rightLittleTip
 pose:
   position:
@@ -113,10 +109,6 @@ pose:
     w: -0.233322322
 """,
             """
-header:
-  stamp:
-    sec: 0
-    nanosec: 0
   frame_id: rightLittleTip
 pose:
   position:
