@@ -40,7 +40,21 @@ print("complete")
 
 
 @pytest.fixture
-def proc_sub():
+def proc_sub_left():
+    return launch.actions.ExecuteProcess(
+        cmd=[
+            "ros2",
+            "topic",
+            "echo",
+            "/pose_receiver/pose/panda_leftfinger",
+        ],
+        cached_output=True,
+        output="screen",
+    )
+
+
+@pytest.fixture
+def proc_sub_right():
     return launch.actions.ExecuteProcess(
         cmd=[
             "ros2",
@@ -54,7 +68,7 @@ def proc_sub():
 
 
 @launch_pytest.fixture
-def launch_description(address_rokoko, proc_pub, proc_sub):
+def launch_description(address_rokoko, proc_pub, proc_sub_left, proc_sub_right):
     addr, port = address_rokoko
 
     return launch.LaunchDescription(
@@ -70,7 +84,23 @@ def launch_description(address_rokoko, proc_pub, proc_sub):
                                 launch.actions.LogInfo(
                                     msg=f"Sub waited 1 seconds; start"
                                 ),
-                                proc_sub,
+                                proc_sub_left,
+                            ],
+                        ),
+                    ],
+                )
+            ),
+            launch.actions.RegisterEventHandler(
+                event_handler=launch.event_handlers.OnProcessStart(
+                    target_action=proc_pub,
+                    on_start=[
+                        launch.actions.TimerAction(
+                            period=2.0,
+                            actions=[
+                                launch.actions.LogInfo(
+                                    msg=f"Sub waited 1 seconds; start"
+                                ),
+                                proc_sub_right,
                             ],
                         ),
                     ],
@@ -92,8 +122,43 @@ def launch_description(address_rokoko, proc_pub, proc_sub):
 
 
 @pytest.mark.launch(fixture=launch_description)
-def test_read_stdout(proc_sub, launch_context):
-    def validate_output(output):
+def test_read_stdout(proc_sub_left, proc_sub_right, launch_context):
+    def validate_output_left(output):
+        true = [
+            """
+  frame_id: leftLittleTip
+pose:
+  position:
+    x: -0.0540380739
+    y: 1.00866354
+    z: 0.0380104333
+  orientation:
+    x: -0.4792365
+    y: -0.7526037
+    z: 0.1730507
+    w: -0.417101949
+""",
+            """
+  frame_id: leftLittleTip
+pose:
+  position:
+    x: -0.0540567338
+    y: 1.00866377
+    z: 0.03805481
+  orientation:
+    x: -0.479381263
+    y: -0.752497435
+    z: 0.173334673
+    w: -0.417009145
+""",
+        ]
+        assert all(list((e in output) for e in true)), output
+
+    launch_pytest.tools.process.assert_output_sync(
+        launch_context, proc_sub_left, validate_output_left, timeout=10
+    )
+
+    def validate_output_right(output):
         true = [
             """
   frame_id: rightLittleTip
@@ -125,6 +190,6 @@ pose:
         assert all(list((e in output) for e in true)), output
 
     launch_pytest.tools.process.assert_output_sync(
-        launch_context, proc_sub, validate_output, timeout=10
+        launch_context, proc_sub_right, validate_output_right, timeout=10
     )
     yield
