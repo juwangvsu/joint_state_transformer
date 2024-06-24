@@ -10,7 +10,7 @@ def proc_pub():
             "ros2",
             "topic",
             "pub",
-            "/joint_state_transformer/pose",
+            "/joint_state_transformer/pose/panda_hand",
             "geometry_msgs/msg/PoseStamped",
             "{header: {frame_id: panda_hand, stamp: now}, pose: {position: {x: 0.2, y: 0.1, z: 0.3}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}",
         ],
@@ -97,6 +97,6 @@ effort: []
         assert true in output, output
 
     launch_pytest.tools.process.assert_output_sync(
-        launch_context, proc_sub, validate_output, timeout=15
+        launch_context, proc_sub, validate_output, timeout=25
     )
     yield

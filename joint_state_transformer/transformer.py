@@ -5,6 +5,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
 
+import message_filters
 import cspace.transformers
 import huggingface_hub
 import accelerate
@@ -48,9 +49,6 @@ class TransformerNode(Node):
         self.kinematics_ = None
 
         self.publisher_ = self.create_publisher(JointState, self.joint_states_, 10)
-        self.subscription_ = self.create_subscription(
-            PoseStamped, self.pose_, self.subscription_callback, 10
-        )
         self.description_ = self.create_subscription(
             String,
             self.robot_description_,
@@ -60,39 +58,49 @@ class TransformerNode(Node):
             ),
         )
 
-    def subscription_callback(self, msg):
-        self.get_logger().info(f"subscription: {msg}")
-        if self.kinematics_:
-            assert self.kinematics_.link == tuple([msg.header.frame_id])
-            position = torch.tensor(
-                (msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
-            ).unsqueeze(-1)
-            orientation = torch.tensor(
-                (
-                    msg.pose.orientation.x,
-                    msg.pose.orientation.y,
-                    msg.pose.orientation.z,
-                    msg.pose.orientation.w,
+    def message_filters_callback(self, *msgs):
+        self.get_logger().info(f"subscription: {msgs}")
+        assert self.kinematics_.link == tuple(msg.header.frame_id for msg in msgs)
+        position = torch.stack(
+            tuple(
+                torch.tensor(
+                    (msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
                 )
-            ).unsqueeze(-1)
-            pose = cspace.torch.classes.LinkPoseCollection(
-                base=self.kinematics_.base,
-                name=self.kinematics_.link,
-                position=position,
-                orientation=orientation,
-            )
-            state = self.kinematics_.inverse(pose)
+                for msg in msgs
+            ),
+            dim=-1,
+        )
+        orientation = torch.stack(
+            tuple(
+                torch.tensor(
+                    (
+                        msg.pose.orientation.x,
+                        msg.pose.orientation.y,
+                        msg.pose.orientation.z,
+                        msg.pose.orientation.w,
+                    )
+                )
+                for msg in msgs
+            ),
+            dim=-1,
+        )
+        pose = cspace.torch.classes.LinkPoseCollection(
+            base=self.kinematics_.base,
+            name=self.kinematics_.link,
+            position=position,
+            orientation=orientation,
+        )
 
-            msg = JointState()
-            msg.header.frame_id = self.kinematics_.base
-            msg.name = list(state.name)
-            msg.position = list(
-                state.position(self.kinematics_.spec, name).item()
-                for name in state.name
-            )
+        state = self.kinematics_.inverse(pose)
+        msg = JointState()
+        msg.header.frame_id = self.kinematics_.base
+        msg.name = list(state.name)
+        msg.position = list(
+            state.position(self.kinematics_.spec, name).item() for name in state.name
+        )
 
-            self.publisher_.publish(msg)
-            self.get_logger().info(f"joint_state: {msg}")
+        self.publisher_.publish(msg)
+        self.get_logger().info(f"joint_state: {msg}")
 
     def description_callback(self, msg):
         self.get_logger().info(f"description: {msg}")
@@ -105,6 +113,17 @@ class TransformerNode(Node):
                 kinematics.model, checkpoint=self.local_
             )
             self.kinematics_ = kinematics
+
+            self.message_filters_ = message_filters.TimeSynchronizer(
+                fs=list(
+                    message_filters.Subscriber(
+                        self, PoseStamped, "{}/{}".format(self.pose_, link)
+                    )
+                    for link in kinematics.link
+                ),
+                queue_size=10,
+            )
+            self.message_filters_.registerCallback(self.message_filters_callback)
             self.get_logger().info(f"description: kinematics done")
         self.get_logger().info(f"description: {self.kinematics_}")
 
@@ -114,6 +133,8 @@ def main(args=None):
 
     node = TransformerNode()
     try:
+        while rclpy.ok() and not node.kinematics_:
+            rclpy.spin_once(node)
         rclpy.spin(node)
     finally:
         node.destroy_node()
