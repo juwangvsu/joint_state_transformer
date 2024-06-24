@@ -41,7 +41,14 @@ def generate_launch_description():
                 parameters=[
                     {
                         "plugin": "joint_state_transformer.plugin.Rokoko",
-                        "params": ["addr={}".format(addr), "port={}".format(port)],
+                        "params": [
+                            "addr={}".format(addr),
+                            "port={}".format(port),
+                        ],
+                        "link": [
+                            "leftLittleTip:panda_leftfinger",
+                            "rightLittleTip:panda_rightfinger",
+                        ],
                     }
                 ],
             ),

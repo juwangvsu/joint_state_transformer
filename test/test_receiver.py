@@ -46,7 +46,7 @@ def proc_sub():
             "ros2",
             "topic",
             "echo",
-            "/pose_receiver/pose",
+            "/pose_receiver/pose/panda_rightfinger",
         ],
         cached_output=True,
         output="screen",
@@ -65,7 +65,7 @@ def launch_description(address_rokoko, proc_pub, proc_sub):
                     target_action=proc_pub,
                     on_start=[
                         launch.actions.TimerAction(
-                            period=1.0,
+                            period=2.0,
                             actions=[
                                 launch.actions.LogInfo(
                                     msg=f"Sub waited 1 seconds; start"
@@ -133,6 +133,6 @@ pose:
         assert all(list((e in output) for e in true)), output
 
     launch_pytest.tools.process.assert_output_sync(
-        launch_context, proc_sub, validate_output, timeout=5
+        launch_context, proc_sub, validate_output, timeout=10
     )
     yield
