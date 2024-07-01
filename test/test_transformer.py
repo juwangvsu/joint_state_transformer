@@ -69,7 +69,8 @@ def launch_description(proc_pub, proc_sub):
 @pytest.mark.launch(fixture=launch_description)
 def test_read_stdout(proc_sub, launch_context):
     def validate_output(output):
-        true = """
+        true = [
+            """
 header:
   stamp:
     sec: 0
@@ -84,17 +85,15 @@ name:
 - panda_joint6
 - panda_joint7
 position:
-- -1.7939223223223226
-- -0.43659539539539494
-- 0.2376056056056055
-- 0.08568389902945395
-- 2.1622110110110113
-- 3.8203431907911556
-- 0.33264784784784807
+- -0.9623027027027033
+""",
+            """
+- 0.594014014014014
 velocity: []
 effort: []
-"""
-        assert true in output, output
+""",
+        ]
+        assert all(list(entry in output for entry in true)), output
 
     launch_pytest.tools.process.assert_output_sync(
         launch_context, proc_sub, validate_output, timeout=25

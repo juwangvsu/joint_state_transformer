@@ -8,7 +8,7 @@ from geometry_msgs.msg import PoseStamped
 import message_filters
 import cspace.transformers
 import huggingface_hub
-import accelerate
+import pathlib
 import torch
 
 
@@ -19,7 +19,7 @@ class TransformerNode(Node):
         self.declare_parameter("pose", "~/pose")
         self.declare_parameter("joint_states", "~/joint_states")
         self.declare_parameter("robot_description", "~/robot_description")
-        self.declare_parameter("checkpoint", rclpy.Parameter.Type.STRING)
+        self.declare_parameter("load", rclpy.Parameter.Type.STRING)
 
         self.pose_ = self.get_parameter("pose").get_parameter_value().string_value
         self.joint_states_ = (
@@ -28,20 +28,18 @@ class TransformerNode(Node):
         self.robot_description_ = (
             self.get_parameter("robot_description").get_parameter_value().string_value
         )
-        self.checkpoint_ = (
-            self.get_parameter("checkpoint").get_parameter_value().string_value
-        )
+        self.load_ = self.get_parameter("load").get_parameter_value().string_value
         self.local_ = (
-            huggingface_hub.snapshot_download(self.checkpoint_.removeprefix("hf:"))
-            if self.checkpoint_.startswith("hf:")
+            huggingface_hub.snapshot_download(self.load_.removeprefix("hf:"))
+            if self.load_.startswith("hf:")
             else None
         )
         self.get_logger().info(
-            "parameters: pose={} joint_states={} robot_description={} checkpoint={}(local={})".format(
+            "parameters: pose={} joint_states={} robot_description={} load={}(local={})".format(
                 self.pose_,
                 self.joint_states_,
                 self.robot_description_,
-                self.checkpoint_,
+                self.load_,
                 self.local_,
             )
         )
@@ -106,11 +104,9 @@ class TransformerNode(Node):
         self.get_logger().info(f"description: {msg}")
         if not self.kinematics_:
             self.get_logger().info(f"description: kinematics load")
-            kinematics = cspace.transformers.Kinematics(
-                msg.data, "panda_hand", model="gpt2"
-            )
-            kinematics.model = accelerate.load_checkpoint_and_dispatch(
-                kinematics.model, checkpoint=self.local_
+            spec = cspace.cspace.classes.Spec(description=msg.data)
+            kinematics = cspace.transformers.Kinematics.load(
+                pathlib.Path(self.local_).joinpath("kinematics.pth")
             )
             self.kinematics_ = kinematics
 

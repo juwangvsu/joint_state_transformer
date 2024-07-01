@@ -43,7 +43,7 @@ def generate_launch_description():
                 output="screen",
                 parameters=[
                     {
-                        "checkpoint": "hf:yong-tang/cspace",
+                        "load": "hf:yong-tang/cspace",
                     }
                 ],
                 remappings=[
