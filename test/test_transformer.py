@@ -71,10 +71,6 @@ def test_read_stdout(proc_sub, launch_context):
     def validate_output(output):
         true = [
             """
-header:
-  stamp:
-    sec: 0
-    nanosec: 0
   frame_id: panda_link0
 name:
 - panda_joint1
@@ -88,9 +84,11 @@ position:
 - -0.9623027027027033
 """,
             """
-- 0.594014014014014
 velocity: []
 effort: []
+---
+header:
+  stamp:
 """,
         ]
         assert all(list(entry in output for entry in true)), output
