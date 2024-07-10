@@ -172,6 +172,9 @@ pose:
     y: 0.467119068
     z: 0.850298643
     w: -0.233322322
+---
+header:
+  stamp:
 """,
             """
   frame_id: rightLittleTip
@@ -185,6 +188,9 @@ pose:
     y: 0.467155
     z: 0.8502595
     w: -0.233391121
+---
+header:
+  stamp:
 """,
         ]
         assert all(list((e in output) for e in true)), output
