@@ -41,6 +41,9 @@ class Rokoko(Plugin):
             )
             data = json.loads(message)
             assert data["version"] == "3,0"
+            if len(data["scene"]["actors"]) == 0:
+                continue
+
             assert len(data["scene"]["actors"]) == 1
             now = self._now_()
             for name, item in data["scene"]["actors"][0]["body"].items():
