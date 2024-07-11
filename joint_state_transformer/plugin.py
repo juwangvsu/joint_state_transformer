@@ -37,7 +37,7 @@ class Rokoko(Plugin):
         while True:
             message, address = self._socket_.recvfrom(65536)
             rclpy.logging.get_logger("rokoko").info(
-                "address={} message={}".format(address, len(message))
+                "address={} message={}".format(address, message)
             )
             data = json.loads(message)
             assert data["version"] == "3,0"
