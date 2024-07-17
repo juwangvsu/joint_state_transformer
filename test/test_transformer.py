@@ -81,7 +81,6 @@ name:
 - panda_joint6
 - panda_joint7
 position:
-- -0.9623027027027033
 """,
             """
 velocity: []
