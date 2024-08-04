@@ -105,7 +105,7 @@ class TransformerNode(Node):
         if not self.kinematics_:
             self.get_logger().info(f"description: kinematics load")
             spec = cspace.cspace.classes.Spec(description=msg.data)
-            kinematics = cspace.transformers.InverseKinematics.load(
+            kinematics = torch.load(
                 pathlib.Path(self.local_).joinpath("kinematics.pth")
             )
             self.kinematics_ = kinematics
