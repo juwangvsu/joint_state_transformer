@@ -91,7 +91,7 @@ class TransformerNode(Node):
 
         state = self.kinematics_.inverse(pose)
         msg = JointState()
-        msg.header.frame_id = self.kinematics_.base
+        msg.header.stamp = self.get_clock().now().to_msg()
         msg.name = list(state.name)
         msg.position = list(
             state.position(self.kinematics_.spec, name).item() for name in state.name

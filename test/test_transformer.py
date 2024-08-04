@@ -71,7 +71,7 @@ def test_read_stdout(proc_sub, launch_context):
     def validate_output(output):
         true = [
             """
-  frame_id: panda_link0
+  frame_id: ''
 name:
 - panda_joint1
 - panda_joint2
