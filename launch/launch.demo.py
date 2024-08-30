@@ -43,7 +43,7 @@ def generate_launch_description():
                 output="screen",
                 parameters=[
                     {
-                        "load": "hf:yong-tang/cspace",
+                        "load": "hf:yong-tang/cspace-inverse-panda-hand",
                     }
                 ],
                 remappings=[

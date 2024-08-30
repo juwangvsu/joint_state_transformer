@@ -20,6 +20,8 @@ class TransformerNode(Node):
         self.declare_parameter("joint_states", "~/joint_states")
         self.declare_parameter("robot_description", "~/robot_description")
         self.declare_parameter("load", rclpy.Parameter.Type.STRING)
+        self.declare_parameter("repeat", rclpy.Parameter.Type.INTEGER)
+        self.declare_parameter("device", "cpu")
 
         self.pose_ = self.get_parameter("pose").get_parameter_value().string_value
         self.joint_states_ = (
@@ -29,18 +31,26 @@ class TransformerNode(Node):
             self.get_parameter("robot_description").get_parameter_value().string_value
         )
         self.load_ = self.get_parameter("load").get_parameter_value().string_value
+        self.repeat_ = (
+            self.get_parameter_or("repeat").get_parameter_value().integer_value
+            if self.get_parameter_or("repeat")
+            else None
+        )
+        self.device_ = self.get_parameter("device").get_parameter_value().string_value
         self.local_ = (
             huggingface_hub.snapshot_download(self.load_.removeprefix("hf:"))
             if self.load_.startswith("hf:")
             else None
         )
         self.get_logger().info(
-            "parameters: pose={} joint_states={} robot_description={} load={}(local={})".format(
+            "parameters: pose={} joint_states={} robot_description={} load={}(local={}) repeat={} device={}".format(
                 self.pose_,
                 self.joint_states_,
                 self.robot_description_,
                 self.load_,
                 self.local_,
+                self.repeat_,
+                self.device_,
             )
         )
 
@@ -89,7 +99,7 @@ class TransformerNode(Node):
             orientation=orientation,
         )
 
-        state = self.kinematics_.inverse(pose)
+        state = self.kinematics_.inverse(pose, repeat=self.repeat_)
         msg = JointState()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.name = list(state.name)
@@ -106,7 +116,8 @@ class TransformerNode(Node):
             self.get_logger().info(f"description: kinematics load")
             spec = cspace.cspace.classes.Spec(description=msg.data)
             kinematics = torch.load(
-                pathlib.Path(self.local_).joinpath("kinematics.pth")
+                pathlib.Path(self.local_).joinpath("kinematics.pth"),
+                map_location=torch.device(self.device_),
             )
             self.kinematics_ = kinematics
 
