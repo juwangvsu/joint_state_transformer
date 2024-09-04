@@ -18,6 +18,7 @@ class TransformerNode(Node):
 
         self.declare_parameter("pose", "~/pose")
         self.declare_parameter("joint_states", "~/joint_states")
+        self.declare_parameter("joint_commands", "~/joint_commands")
         self.declare_parameter("robot_description", "~/robot_description")
         self.declare_parameter("load", rclpy.Parameter.Type.STRING)
         self.declare_parameter("repeat", rclpy.Parameter.Type.INTEGER)
@@ -26,6 +27,9 @@ class TransformerNode(Node):
         self.pose_ = self.get_parameter("pose").get_parameter_value().string_value
         self.joint_states_ = (
             self.get_parameter("joint_states").get_parameter_value().string_value
+        )
+        self.joint_commands_ = (
+            self.get_parameter("joint_commands").get_parameter_value().string_value
         )
         self.robot_description_ = (
             self.get_parameter("robot_description").get_parameter_value().string_value
@@ -43,9 +47,10 @@ class TransformerNode(Node):
             else None
         )
         self.get_logger().info(
-            "parameters: pose={} joint_states={} robot_description={} load={}(local={}) repeat={} device={}".format(
+            "parameters: pose={} joint_states={} joint_commands={} robot_description={} load={}(local={}) repeat={} device={}".format(
                 self.pose_,
                 self.joint_states_,
+                self.joint_commands_,
                 self.robot_description_,
                 self.load_,
                 self.local_,
@@ -54,9 +59,13 @@ class TransformerNode(Node):
             )
         )
 
+        self.state_ = None
         self.kinematics_ = None
 
-        self.publisher_ = self.create_publisher(JointState, self.joint_states_, 10)
+        self.publisher_ = self.create_publisher(JointState, self.joint_commands_, 10)
+        self.subscription_ = self.create_subscription(
+            JointState, self.joint_states_, self.subscription_callback, 10
+        )
         self.description_ = self.create_subscription(
             String,
             self.robot_description_,
@@ -98,17 +107,27 @@ class TransformerNode(Node):
             position=position,
             orientation=orientation,
         )
+        if self.state_:
+            state = self.kinematics_.inverse(pose, self.state_, repeat=self.repeat_)
+            msg = JointState()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.name = list(state.name)
+            msg.position = list(
+                state.position(self.kinematics_.spec, name).item()
+                for name in state.name
+            )
 
-        state = self.kinematics_.inverse(pose, repeat=self.repeat_)
-        msg = JointState()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.name = list(state.name)
-        msg.position = list(
-            state.position(self.kinematics_.spec, name).item() for name in state.name
-        )
+            self.publisher_.publish(msg)
+            self.get_logger().info(f"joint_state: {msg}")
 
-        self.publisher_.publish(msg)
-        self.get_logger().info(f"joint_state: {msg}")
+    def subscription_callback(self, msg):
+        self.get_logger().info(f"subscription: {msg}")
+        if self.kinematics_:
+            entries = dict(zip(msg.name, msg.position))
+            position = list(entries[name] for name in self.kinematics_.joint)
+            self.state_ = cspace.torch.classes.JointStateCollection(
+                self.kinematics_.joint, position
+            )
 
     def description_callback(self, msg):
         self.get_logger().info(f"description: {msg}")

@@ -4,7 +4,7 @@ import launch_pytest
 
 
 @pytest.fixture
-def proc_pub():
+def proc_pose():
     return launch.actions.ExecuteProcess(
         cmd=[
             "ros2",
@@ -19,13 +19,28 @@ def proc_pub():
 
 
 @pytest.fixture
+def proc_state():
+    return launch.actions.ExecuteProcess(
+        cmd=[
+            "ros2",
+            "topic",
+            "pub",
+            "/joint_state_transformer/joint_states",
+            "sensor_msgs/msg/JointState",
+            "{header: {stamp: now}, name: ['panda_joint1', 'panda_joint2', 'panda_joint3', 'panda_joint4', 'panda_joint5', 'panda_joint6', 'panda_joint7'], position: [0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1]}",
+        ],
+        output="screen",
+    )
+
+
+@pytest.fixture
 def proc_sub():
     return launch.actions.ExecuteProcess(
         cmd=[
             "ros2",
             "topic",
             "echo",
-            "/joint_state_transformer/joint_states",
+            "/joint_state_transformer/joint_commands",
         ],
         cached_output=True,
         output="screen",
@@ -33,13 +48,14 @@ def proc_sub():
 
 
 @launch_pytest.fixture
-def launch_description(proc_pub, proc_sub):
+def launch_description(proc_pose, proc_state, proc_sub):
     return launch.LaunchDescription(
         [
-            proc_pub,
+            proc_pose,
+            proc_state,
             launch.actions.RegisterEventHandler(
                 event_handler=launch.event_handlers.OnProcessStart(
-                    target_action=proc_pub,
+                    target_action=proc_state,
                     on_start=[
                         launch.actions.TimerAction(
                             period=10.0,
