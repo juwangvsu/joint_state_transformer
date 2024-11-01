@@ -76,7 +76,7 @@ class TransformerNode(Node):
         )
 
     def message_filters_callback(self, *msgs):
-        self.get_logger().info(f"subscription: {msgs}")
+        self.get_logger().info(f"message_filters_callback: {msgs}")
         assert self.kinematics_.link == tuple(msg.header.frame_id for msg in msgs)
         position = torch.stack(
             tuple(
@@ -126,7 +126,7 @@ class TransformerNode(Node):
             entries = dict(zip(msg.name, msg.position))
             position = list(entries[name] for name in self.kinematics_.joint)
             self.state_ = cspace.torch.classes.JointStateCollection(
-                self.kinematics_.joint, position
+                self.kinematics_.spec, self.kinematics_.joint, position
             )
 
     def description_callback(self, msg):
@@ -134,6 +134,8 @@ class TransformerNode(Node):
         if not self.kinematics_:
             self.get_logger().info(f"description: kinematics load")
             spec = cspace.cspace.classes.Spec(description=msg.data)
+            self.get_logger().info(f'hf download folder: {self.local_}')
+            print('hf download folder ', self.local_)
             kinematics = torch.load(
                 pathlib.Path(self.local_).joinpath("kinematics.pth"),
                 map_location=torch.device(self.device_),

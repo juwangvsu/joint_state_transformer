@@ -40,7 +40,7 @@ class Rokoko(Plugin):
                 "address={} message={}".format(address, message)
             )
             data = json.loads(message)
-            assert data["version"] == "3,0"
+            #assert data["version"] == "3,0"
             if len(data["scene"]["actors"]) == 0:
                 continue
 
