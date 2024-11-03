@@ -136,10 +136,16 @@ class TransformerNode(Node):
             spec = cspace.cspace.classes.Spec(description=msg.data)
             self.get_logger().info(f'hf download folder: {self.local_}')
             print('hf download folder ', self.local_)
-            kinematics = torch.load(
-                pathlib.Path(self.local_).joinpath("kinematics.pth"),
-                map_location=torch.device(self.device_),
-            )
+            if self.local_ is None:
+                kinematics = torch.load(
+                    pathlib.Path(self.load_),
+                    map_location=torch.device(self.device_),
+                )
+            else:
+                kinematics = torch.load(
+                    pathlib.Path(self.local_).joinpath("kinematics.pth"),
+                    map_location=torch.device(self.device_),
+                )
             self.kinematics_ = kinematics
 
             self.message_filters_ = message_filters.TimeSynchronizer(
